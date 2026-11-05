@@ -1,0 +1,199 @@
+// ============================================================================
+// ShopEase: 3D Shop Inventory & Sales Management System
+// DBML (Database Markup Language) for dbdiagram.io
+// ============================================================================
+
+Table users {
+  id int [pk, increment]
+  name varchar(100) [not null]
+  email varchar(191) [unique, not null]
+  password varchar(255) [not null]
+  role varchar(20) [not null, default: 'cashier', note: 'admin or cashier']
+  is_active tinyint [not null, default: 1]
+  profile_photo varchar(255)
+  theme varchar(20) [not null, default: 'light', note: 'light or dark']
+  created_at datetime [default: `now()`]
+
+  indexes {
+    role
+    is_active
+  }
+}
+
+Table categories {
+  id int [pk, increment]
+  name varchar(100) [unique, not null]
+  description text
+  icon_3d_path varchar(255)
+  created_at datetime [default: `now()`]
+}
+
+Table suppliers {
+  id int [pk, increment]
+  name varchar(150) [not null]
+  phone varchar(50) [not null]
+  address text
+  created_at datetime [default: `now()`]
+}
+
+Table products {
+  id int [pk, increment]
+  category_id int [not null]
+  supplier_id int
+  name varchar(191) [not null]
+  sku_code varchar(50) [unique, not null]
+  cost_price decimal(10,2) [not null, default: 0.00]
+  selling_price decimal(10,2) [not null, default: 0.00]
+  stock_quantity int [not null, default: 0]
+  low_stock_level int [not null, default: 5]
+  expiry_date date
+  image varchar(255)
+  model_3d_path varchar(255)
+  model_3d_usdz_path varchar(255)
+  is_active tinyint [not null, default: 1]
+  created_at datetime [default: `now()`]
+
+  indexes {
+    name
+    category_id
+    supplier_id
+    is_active
+    stock_quantity
+  }
+}
+
+Table sales {
+  id int [pk, increment]
+  invoice_no varchar(50) [unique, not null]
+  cashier_id int [not null]
+  customer_name varchar(100)
+  customer_phone varchar(50)
+  subtotal decimal(10,2) [not null, default: 0.00]
+  discount_amount decimal(10,2) [not null, default: 0.00]
+  total_amount decimal(10,2) [not null, default: 0.00]
+  total_cost decimal(10,2) [not null, default: 0.00]
+  payment_type varchar(20) [not null, default: 'Cash', note: 'Cash, Card, bKash']
+  created_at datetime [default: `now()`]
+
+  indexes {
+    created_at
+    cashier_id
+    payment_type
+  }
+}
+
+Table sale_items {
+  id int [pk, increment]
+  sale_id int [not null]
+  product_id int [not null]
+  product_name varchar(191) [not null]
+  quantity int [not null, default: 1]
+  unit_price decimal(10,2) [not null, default: 0.00]
+  cost_price decimal(10,2) [not null, default: 0.00]
+  subtotal decimal(10,2) [not null, default: 0.00]
+
+  indexes {
+    sale_id
+    product_id
+  }
+}
+
+Table held_bills {
+  id int [pk, increment]
+  cashier_id int [not null]
+  label varchar(100)
+  customer_name varchar(100)
+  cart_json longtext [not null]
+  item_count int [not null, default: 0]
+  total_amount decimal(10,2) [not null, default: 0.00]
+  created_at datetime [default: `now()`]
+
+  indexes {
+    cashier_id
+    created_at
+  }
+}
+
+Table expenses {
+  id int [pk, increment]
+  expense_date date [not null]
+  category varchar(30) [not null, note: 'Rent, Electricity, Salary, Transport, Supplies, Other']
+  title varchar(150) [not null]
+  amount decimal(10,2) [not null, default: 0.00]
+  note text
+  created_by int [not null]
+  created_at datetime [default: `now()`]
+
+  indexes {
+    expense_date
+    category
+    created_by
+  }
+}
+
+Table daily_closings {
+  id int [pk, increment]
+  closing_date date [unique, not null]
+  invoices_count int [not null, default: 0]
+  gross_sales decimal(10,2) [not null, default: 0.00]
+  discounts decimal(10,2) [not null, default: 0.00]
+  cogs decimal(10,2) [not null, default: 0.00]
+  expenses_total decimal(10,2) [not null, default: 0.00]
+  net_profit decimal(10,2) [not null, default: 0.00]
+  expected_cash decimal(10,2) [not null, default: 0.00]
+  counted_cash decimal(10,2) [not null, default: 0.00]
+  cash_difference decimal(10,2) [not null, default: 0.00]
+  note text
+  closed_by int [not null]
+  closed_at datetime [default: `now()`]
+
+  indexes {
+    closing_date
+  }
+}
+
+Table login_attempts {
+  id int [pk, increment]
+  email varchar(191) [not null]
+  ip_address varchar(45) [not null]
+  attempted_at datetime [default: `now()`]
+
+  indexes {
+    (email, attempted_at)
+  }
+}
+
+Table password_resets {
+  id int [pk, increment]
+  user_id int [not null]
+  token_hash varchar(64) [not null]
+  expires_at datetime [not null]
+  used_at datetime
+
+  indexes {
+    token_hash
+  }
+}
+
+Table notifications {
+  id int [pk, increment]
+  type varchar(50) [not null, default: 'info']
+  message varchar(255) [not null]
+  is_read tinyint [not null, default: 0]
+  created_at datetime [default: `now()`]
+
+  indexes {
+    (is_read, created_at)
+  }
+}
+
+// Relationships
+Ref: products.category_id > categories.id [delete: restrict, update: cascade]
+Ref: products.supplier_id > suppliers.id [delete: set null, update: cascade]
+Ref: sales.cashier_id > users.id [delete: restrict, update: cascade]
+Ref: sale_items.sale_id > sales.id [delete: cascade, update: cascade]
+Ref: sale_items.product_id > products.id [delete: restrict, update: cascade]
+Ref: held_bills.cashier_id > users.id [delete: cascade, update: cascade]
+Ref: expenses.created_by > users.id [delete: restrict, update: cascade]
+Ref: daily_closings.closed_by > users.id [delete: restrict, update: cascade]
+Ref: password_resets.user_id > users.id [delete: cascade, update: cascade]
